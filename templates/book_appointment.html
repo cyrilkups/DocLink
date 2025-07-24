@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3>Book Appointment</h3>
+            </div>
+            <div class="card-body">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" action="{{ url_for('book_appointment') }}" class="needs-validation" novalidate>
+                    <div class="mb-4">
+                        <label for="doctor_id" class="form-label">Select Doctor</label>
+                        <select class="form-select" id="doctor_id" name="doctor_id" required>
+                            <option value="">Choose a doctor...</option>
+                            {% for doctor in doctors %}
+                                <option value="{{ doctor.id }}">
+                                    {{ doctor.full_name }} - {{ doctor.specialization }} ({{ doctor.state }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <div class="invalid-feedback">
+                            Please select a doctor.
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="appointment_datetime" class="form-label">Date and Time</label>
+                        <input type="datetime-local" class="form-control" id="appointment_datetime" name="appointment_datetime" 
+                               min="{{ now.strftime('%Y-%m-%dT%H:%M') }}" required>
+                        <div class="invalid-feedback">
+                            Please select a valid date and time.
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="priority" class="form-label">Priority Level</label>
+                        <select class="form-select" id="priority" name="priority" required>
+                            <option value="normal">Normal</option>
+                            <option value="urgent">Urgent</option>
+                            <option value="emergency">Emergency</option>
+                        </select>
+                        <div class="invalid-feedback">
+                            Please select a priority level.
+                        </div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Book Appointment</button>
+                    </div>
+                </form>
+
+                {% if doctors %}
+                <div class="mt-4">
+                    <h4>Available Doctors</h4>
+                    <div class="row">
+                        {% for doctor in doctors %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ doctor.full_name }}</h5>
+                                    <p class="card-text">
+                                        <strong>Specialization:</strong> {{ doctor.specialization }}<br>
+                                        <strong>State:</strong> {{ doctor.state }}<br>
+                                        <strong>Contact:</strong> {{ doctor.phone }}<br>
+                                        <strong>Email:</strong> {{ doctor.email }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="alert alert-info mt-4">
+                    No doctors are available at the moment.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Form validation
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+</script>
+{% endblock %} 

@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <!-- Doctor List -->
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header">
+                <h3>Connected Doctors</h3>
+            </div>
+            <div class="card-body">
+                {% if doctors %}
+                    <div class="list-group">
+                        {% for doctor in doctors %}
+                            <a href="{{ url_for('messages') }}?doctor_id={{ doctor.id }}" 
+                               class="list-group-item list-group-item-action {% if request.args.get('doctor_id')|int == doctor.id %}active{% endif %}">
+                                {{ doctor.full_name }}
+                                <small class="d-block">{{ doctor.specialization }}</small>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-center">No connected doctors</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Area -->
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header">
+                <h3>Messages</h3>
+            </div>
+            <div class="card-body">
+                {% if request.args.get('doctor_id') %}
+                    <div id="message-container" class="message-container mb-3">
+                        <!-- Messages will be loaded here via JavaScript -->
+                    </div>
+                    <form id="message-form" class="mt-3">
+                        <input type="hidden" name="doctor_id" value="{{ request.args.get('doctor_id') }}">
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="content" placeholder="Type your message..." required>
+                            <input type="file" class="form-control" name="file" accept="image/*,.pdf,.doc,.docx">
+                            <button type="submit" class="btn btn-primary">Send</button>
+                        </div>
+                    </form>
+                {% else %}
+                    <p class="text-center">Select a doctor to start chatting</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const messageContainer = document.getElementById('message-container');
+    const messageForm = document.getElementById('message-form');
+    const doctorId = new URLSearchParams(window.location.search).get('doctor_id');
+
+    if (doctorId) {
+        // Load messages
+        function loadMessages() {
+            fetch(`/get_messages/${doctorId}`)
+                .then(response => response.json())
+                .then(messages => {
+                    messageContainer.innerHTML = '';
+                    messages.forEach(msg => {
+                        const messageDiv = document.createElement('div');
+                        messageDiv.className = `message ${msg.is_sent ? 'sent' : 'received'}`;
+                        
+                        let content = `<p>${msg.content}</p>`;
+                        if (msg.file_path) {
+                            if (msg.file_path.endsWith('.pdf') || msg.file_path.endsWith('.doc') || msg.file_path.endsWith('.docx')) {
+                                content += `<a href="${msg.file_path}" target="_blank">View Document</a>`;
+                            } else {
+                                content += `<img src="${msg.file_path}" class="img-fluid" alt="Attached image">`;
+                            }
+                        }
+                        content += `<small class="text-muted">${msg.created_at}</small>`;
+                        
+                        messageDiv.innerHTML = content;
+                        messageContainer.appendChild(messageDiv);
+                    });
+                    messageContainer.scrollTop = messageContainer.scrollHeight;
+                });
+        }
+
+        // Load messages initially and every 5 seconds
+        loadMessages();
+        setInterval(loadMessages, 5000);
+
+        // Handle message submission
+        messageForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            fetch('/send_message', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    this.reset();
+                    loadMessages();
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %} 

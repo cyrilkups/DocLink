@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Available Doctors Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>Available Doctors</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% set has_available = false %}
+                {% for doctor in doctors %}
+                    {% set already_connected = false %}
+                    {% set request_pending = false %}
+                    
+                    {% for conn in connections %}
+                        {% if (conn.doctor1_id == doctor.id and conn.doctor2_id == current_user.id) or 
+                              (conn.doctor2_id == doctor.id and conn.doctor1_id == current_user.id) %}
+                            {% set already_connected = true %}
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% for req in pending_requests %}
+                        {% if (req.doctor1_id == doctor.id and req.doctor2_id == current_user.id) or 
+                              (req.doctor2_id == doctor.id and req.doctor1_id == current_user.id) %}
+                            {% set request_pending = true %}
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if not already_connected and not request_pending and doctor.id != current_user.id %}
+                        {% set has_available = true %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ doctor.full_name }}</h5>
+                                    <p class="card-text">
+                                        <strong>Specialization:</strong> {{ doctor.specialization }}<br>
+                                        <strong>State:</strong> {{ doctor.state }}<br>
+                                        <strong>Contact:</strong> {{ doctor.phone }}<br>
+                                        <strong>Email:</strong> {{ doctor.email }}
+                                    </p>
+                                    <form method="POST" action="{{ url_for('send_request', doctor_id=doctor.id) }}">
+                                        <button type="submit" class="btn btn-primary">Send Connection Request</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+                {% if not has_available %}
+                    <div class="col-12">
+                        <p class="text-muted">No available doctors to connect with.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Incoming Requests Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>Incoming Connection Requests</h3>
+        </div>
+        <div class="card-body">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="row">
+                {% set has_incoming = false %}
+                {% for request in pending_requests %}
+                    {% if request.doctor2_id == current_user.id and request.status == 'pending' %}
+                        {% set has_incoming = true %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ request.doctor1.full_name }}</h5>
+                                    <p class="card-text">
+                                        <strong>Specialization:</strong> {{ request.doctor1.specialization }}<br>
+                                        <strong>State:</strong> {{ request.doctor1.state }}<br>
+                                        <strong>Contact:</strong> {{ request.doctor1.phone }}<br>
+                                        <strong>Email:</strong> {{ request.doctor1.email }}
+                                    </p>
+                                    <div class="d-flex gap-2">
+                                        <form method="POST" action="{{ url_for('handle_request', request_id=request.id, action='accept') }}" class="d-inline">
+                                            <button type="submit" class="btn btn-success">Accept</button>
+                                        </form>
+                                        <form method="POST" action="{{ url_for('handle_request', request_id=request.id, action='reject') }}" class="d-inline">
+                                            <button type="submit" class="btn btn-danger">Reject</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+                {% if not has_incoming %}
+                    <div class="col-12">
+                        <p class="text-muted">No pending incoming requests.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sent Connection Requests Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>Sent Connection Requests</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% set has_outgoing = false %}
+                {% for request in pending_requests %}
+                    {% if request.doctor1_id == current_user.id and request.status == 'pending' %}
+                        {% set has_outgoing = true %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ request.doctor2.full_name }}</h5>
+                                    <p class="card-text">
+                                        <strong>Specialization:</strong> {{ request.doctor2.specialization }}<br>
+                                        <strong>State:</strong> {{ request.doctor2.state }}<br>
+                                        <strong>Status:</strong> <span class="badge bg-warning">Pending</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+                {% if not has_outgoing %}
+                    <div class="col-12">
+                        <p class="text-muted">No pending outgoing requests.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Connected Doctors Section -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Connected Doctors</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% set has_connections = false %}
+                {% for connection in connections %}
+                    {% set has_connections = true %}
+                    {% if connection.doctor1_id == current_user.id %}
+                        {% set connected_doctor = connection.doctor2 %}
+                    {% else %}
+                        {% set connected_doctor = connection.doctor1 %}
+                    {% endif %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ connected_doctor.full_name }}</h5>
+                                <p class="card-text">
+                                    <strong>Specialization:</strong> {{ connected_doctor.specialization }}<br>
+                                    <strong>State:</strong> {{ connected_doctor.state }}<br>
+                                    <strong>Contact:</strong> {{ connected_doctor.phone }}<br>
+                                    <strong>Email:</strong> {{ connected_doctor.email }}
+                                </p>
+                                <a href="{{ url_for('messages') }}" class="btn btn-primary">Message</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+                {% if not has_connections %}
+                    <div class="col-12">
+                        <p class="text-muted">No connected doctors yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

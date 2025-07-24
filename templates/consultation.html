@@ -1,0 +1,349 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0">Consultations</h2>
+        <a href="{{ url_for('book_appointment') }}" class="btn btn-primary d-flex align-items-center gap-2">
+            <i class="fas fa-plus"></i>
+            Book New Appointment
+        </a>
+    </div>
+
+    <div class="nav-wrapper mb-4">
+        <ul class="nav nav-pills nav-fill">
+            <li class="nav-item">
+                <a class="nav-link active" href="#incoming" data-bs-toggle="tab">
+                    Incoming Consultations
+                    {% if incoming|length > 0 %}
+                        <span class="badge bg-white text-primary ms-2">{{ incoming|length }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#outgoing" data-bs-toggle="tab">
+                    Outgoing Consultations
+                    {% if outgoing|length > 0 %}
+                        <span class="badge bg-white text-primary ms-2">{{ outgoing|length }}</span>
+                    {% endif %}
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="incoming">
+            {% if incoming %}
+                <div class="row g-4">
+                    {% for appointment in incoming %}
+                        <div class="col-md-6">
+                            <div class="consultation-card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="avatar">
+                                            <i class="fas fa-user-md"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="mb-0">{{ appointment.sender.full_name }}</h5>
+                                            <span class="text-muted small">{{ appointment.sender.specialization }}</span>
+                                        </div>
+                                    </div>
+                                    {% if appointment.status == 'pending' %}
+                                        <span class="status-badge pending">Pending</span>
+                                    {% elif appointment.status == 'cancelled' %}
+                                        <span class="status-badge cancelled">Cancelled</span>
+                                    {% else %}
+                                        <span class="status-badge active">Active</span>
+                                    {% endif %}
+                                    {% if appointment.priority != 'normal' %}
+                                        <span class="priority-badge {{ appointment.priority }}">{{ appointment.priority|title }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="card-body">
+                                    <div class="info-grid">
+                                        <div class="info-item">
+                                            <i class="far fa-calendar"></i>
+                                            <span>{{ appointment.date_time.strftime('%B %d, %Y') }}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <i class="far fa-clock"></i>
+                                            <span>{{ appointment.date_time.strftime('%I:%M %p') }}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <i class="fas fa-phone"></i>
+                                            <span>{{ appointment.sender.phone }}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <i class="fas fa-map-marker-alt"></i>
+                                            <span>{{ appointment.sender.state }}</span>
+                                        </div>
+                                    </div>
+                                    {% if appointment.status == 'pending' %}
+                                        <div class="action-buttons">
+                                            <form method="POST" action="{{ url_for('handle_appointment', appointment_id=appointment.id, action='accept') }}">
+                                                <button type="submit" class="btn btn-success w-100">Accept</button>
+                                            </form>
+                                            <form method="POST" action="{{ url_for('handle_appointment', appointment_id=appointment.id, action='reject') }}">
+                                                <button type="submit" class="btn btn-outline-danger w-100">Reject</button>
+                                            </form>
+                                        </div>
+                                    {% endif %}
+                                    {% if appointment.status == 'accepted' %}
+                                        <a href="{{ url_for('messages') }}" class="btn btn-primary w-100">Message Doctor</a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-inbox"></i>
+                    </div>
+                    <h3>No Incoming Consultations</h3>
+                    <p>When doctors request consultations with you, they'll appear here.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="tab-pane fade" id="outgoing">
+            {% if outgoing %}
+                <div class="row g-4">
+                    {% for appointment in outgoing %}
+                        <div class="col-md-6">
+                            <div class="consultation-card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="avatar">
+                                            <i class="fas fa-user-md"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="mb-0">{{ appointment.receiver.full_name }}</h5>
+                                            <span class="text-muted small">{{ appointment.receiver.specialization }}</span>
+                                        </div>
+                                    </div>
+                                    {% if appointment.status == 'pending' %}
+                                        <span class="status-badge pending">Pending</span>
+                                    {% elif appointment.status == 'cancelled' %}
+                                        <span class="status-badge cancelled">Cancelled</span>
+                                    {% else %}
+                                        <span class="status-badge active">Active</span>
+                                    {% endif %}
+                                    {% if appointment.priority != 'normal' %}
+                                        <span class="priority-badge {{ appointment.priority }}">{{ appointment.priority|title }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="card-body">
+                                    <div class="info-grid">
+                                        <div class="info-item">
+                                            <i class="far fa-calendar"></i>
+                                            <span>{{ appointment.date_time.strftime('%B %d, %Y') }}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <i class="far fa-clock"></i>
+                                            <span>{{ appointment.date_time.strftime('%I:%M %p') }}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <i class="fas fa-phone"></i>
+                                            <span>{{ appointment.receiver.phone }}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <i class="fas fa-map-marker-alt"></i>
+                                            <span>{{ appointment.receiver.state }}</span>
+                                        </div>
+                                    </div>
+                                    {% if appointment.status == 'pending' %}
+                                        <form method="POST" action="{{ url_for('cancel_appointment', appointment_id=appointment.id) }}">
+                                            <button type="submit" class="btn btn-outline-danger w-100">Cancel Appointment</button>
+                                        </form>
+                                    {% endif %}
+                                    {% if appointment.status == 'accepted' %}
+                                        <a href="{{ url_for('messages') }}" class="btn btn-primary w-100">Message Doctor</a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-paper-plane"></i>
+                    </div>
+                    <h3>No Outgoing Consultations</h3>
+                    <p>Your consultation requests to other doctors will appear here.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+<style>
+    .nav-pills {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 4px;
+    }
+
+    .nav-pills .nav-link {
+        border-radius: 8px;
+        color: #6c757d;
+        padding: 12px 20px;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+
+    .nav-pills .nav-link.active {
+        background: #0d6efd;
+        color: white;
+    }
+
+    .nav-pills .nav-link .badge {
+        font-weight: 500;
+    }
+
+    .consultation-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        overflow: hidden;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .consultation-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .consultation-card .card-header {
+        background: white;
+        padding: 20px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .consultation-card .card-body {
+        padding: 20px;
+    }
+
+    .avatar {
+        width: 40px;
+        height: 40px;
+        background: #e9ecef;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+    }
+
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .status-badge.pending {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .status-badge.active {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .status-badge.cancelled {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .priority-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .priority-badge.normal {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .priority-badge.urgent {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .priority-badge.emergency {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .info-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #6c757d;
+    }
+
+    .info-item i {
+        color: #0d6efd;
+        width: 16px;
+    }
+
+    .action-buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 20px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: #f8f9fa;
+        border-radius: 12px;
+    }
+
+    .empty-state-icon {
+        width: 64px;
+        height: 64px;
+        background: #e9ecef;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 24px;
+        color: #6c757d;
+        font-size: 24px;
+    }
+
+    .empty-state h3 {
+        color: #343a40;
+        margin-bottom: 8px;
+    }
+
+    .empty-state p {
+        color: #6c757d;
+        max-width: 300px;
+        margin: 0 auto;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        font-weight: 500;
+        border-radius: 8px;
+    }
+</style>
+{% endblock %} 

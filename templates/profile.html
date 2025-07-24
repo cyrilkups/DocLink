@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="profile-card animate-slide-in">
+    <div class="profile-header">
+        <div class="profile-avatar" onclick="document.getElementById('avatar-upload').click()">
+            <img src="{{ url_for('static', filename='uploads/' + current_user.avatar_path) if current_user.avatar_path else 'https://ui-avatars.com/api/?name=' + current_user.full_name|urlencode + '&background=4a90e2&color=fff' }}" alt="Profile Picture">
+            <div class="upload-overlay">
+                <i class="fas fa-camera"></i>
+            </div>
+        </div>
+        <form id="avatar-form" style="display: none;">
+            <input type="file" id="avatar-upload" name="avatar" accept="image/*" onchange="uploadAvatar(this)">
+        </form>
+    </div>
+    
+    <div class="profile-info">
+        <h2 class="profile-name">{{ current_user.full_name }}</h2>
+        <p class="profile-specialization">{{ current_user.specialization }}</p>
+        
+        <div class="profile-stats">
+            <div class="stat-item">
+                <div class="stat-value">{{ stats.total_consultations }}</div>
+                <div class="stat-label">Consultations</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{ stats.total_patients }}</div>
+                <div class="stat-label">Patients</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{ stats.rating|default('5.0') }}</div>
+                <div class="stat-label">Rating</div>
+            </div>
+        </div>
+
+        <div class="profile-details">
+            <div class="detail-item">
+                <div class="detail-label">Email</div>
+                <div class="detail-value">{{ current_user.email }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Phone</div>
+                <div class="detail-value">{{ current_user.phone }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">NPI ID</div>
+                <div class="detail-value">{{ current_user.npi_id }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">State</div>
+                <div class="detail-value">{{ current_user.state }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Address</div>
+                <div class="detail-value">{{ current_user.address }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function uploadAvatar(input) {
+    if (input.files && input.files[0]) {
+        const formData = new FormData();
+        formData.append('avatar', input.files[0]);
+
+        fetch('/upload_avatar', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error uploading avatar: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error uploading avatar');
+        });
+    }
+}
+</script>
+{% endblock %} 
